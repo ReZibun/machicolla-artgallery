@@ -6,9 +6,7 @@ import random
 st.set_page_config(layout="wide")  # レイアウト設定
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] {
-        display: none;
-    }
+    /* 折りたたみアイコン（サイドバートグル）は常に表示 */
     [data-testid="collapsedControl"] {
         display: block;
     }
@@ -115,6 +113,33 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# トップへ戻るボタンを右下に固定表示
+st.markdown(
+    """
+    <style>
+    #top-button {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        background-color: rgba(0,0,0,0.4);
+        color: white;
+        border: none;
+        padding: 12px 18px;
+        border-radius: 25px;
+        font-size: 16px;
+        cursor: pointer;
+        z-index: 1000;
+        transition: background-color 0.3s ease;
+    }
+    #top-button:hover {
+        background-color: rgba(0,0,0,0.7);
+    }
+    </style>
+    <button id="top-button" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">▲ Top</button>
+    """,
+    unsafe_allow_html=True
+)
+
 # サイドバーに作者ジャンプリンク
 with st.sidebar.expander("🔍 作者でジャンプ", expanded=False):
     unique_artists = df['アーティスト名'].dropna().unique()
@@ -139,7 +164,7 @@ for _, row in df.iterrows():
     else:
         st.error("❌ 画像リンクの変換に失敗しました。URL形式を確認してください。")
 
-    # 「作品に込めた想い：」で表示（空文字は表示しない）
+    # 「作品に込めた想い：」で表示（空欄除外）
     if '作品の想い' in row and pd.notna(row['作品の想い']) and row['作品の想い'].strip() != "":
         st.markdown(f"**作品に込めた想い：** {row['作品の想い']}")
 
