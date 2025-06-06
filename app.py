@@ -4,6 +4,16 @@ import os
 import random
 
 st.set_page_config(layout="wide")  # レイアウト設定
+st.markdown("""
+    <style>
+    [data-testid="stSidebar"] {
+        display: none;
+    }
+    [data-testid="collapsedControl"] {
+        display: block;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # セッション状態の初期化
 if "show_main" not in st.session_state:
@@ -34,10 +44,10 @@ df = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vT13dyy2yobEUq
 df.rename(columns={
     'アーティスト名\n(例：ガッチャマン)': 'アーティスト名',
     '作品名（テーマ）\n例：\n・将来の自分へ\n・これから読みたい本への気持ちを栞に\n・今隣の人が考えてそうなこと': '作品名（テーマ）',
-    '作品に込めた想い・イチ押しポイント\n例：\n・将来たくさんのことに挑戦したいという思いから様々な色を使って違和感を表現しました！\n・今のなんかモヤモヤする気持ちを表現してみました': '作品の想い',
+    '作品に込めた想い・一押しポイント\n例：\n・将来たくさんのことに挑戦したいという思いから様々な色を使って違和感を表現しました！\n・今のなんかモヤモヤする気持ちを表現してみました': '作品の想い',
+    '作品の写真': '作品の写真',
     '何か伝えたいことがあればこちらに！': '伝えたいこと',
-    '制作年月日': '制作年月日',
-    '作品の写真': '作品の写真'
+    '制作年月日': '制作年月日'
 }, inplace=True)
 
 # ===============================
@@ -106,11 +116,11 @@ st.markdown(
 )
 
 # サイドバーに作者ジャンプリンク
-st.sidebar.title("作者でジャンプ")
-unique_artists = df['アーティスト名'].dropna().unique()
-for artist in unique_artists:
-    anchor = artist.replace(" ", "_").replace("\n", "").strip()
-    st.sidebar.markdown(f"[{artist}](#{anchor})")
+with st.sidebar.expander("🔍 作者でジャンプ", expanded=False):
+    unique_artists = df['アーティスト名'].dropna().unique()
+    for artist in unique_artists:
+        anchor = artist.replace(" ", "_").replace("\n", "").strip()
+        st.markdown(f"[{artist}](#{anchor})")
 
 # 各作品を表示
 for _, row in df.iterrows():
@@ -129,7 +139,8 @@ for _, row in df.iterrows():
     else:
         st.error("❌ 画像リンクの変換に失敗しました。URL形式を確認してください。")
 
-    if '作品の想い' in row and pd.notna(row['作品の想い']):
-        st.markdown(f"**作品に込めた想い・イチ押しポイント：** {row['作品の想い']}")
+    # 「作品に込めた想い：」で表示（空文字は表示しない）
+    if '作品の想い' in row and pd.notna(row['作品の想い']) and row['作品の想い'].strip() != "":
+        st.markdown(f"**作品に込めた想い：** {row['作品の想い']}")
 
     st.markdown("---")
