@@ -1,22 +1,28 @@
 import streamlit as st
 import pandas as pd
+import os
+import random
 
+st.set_page_config(layout="wide")  # レイアウト設定
+
+# セッション状態の初期化
+if "show_main" not in st.session_state:
+    st.session_state.show_main = False
+
+# GoogleドライブURLからファイルIDを抽出
 def convert_drive_url(url):
     if not isinstance(url, str):
         return None
     url = url.strip()
-
     if "drive.google.com" in url:
         if "/file/d/" in url:
             try:
-                file_id = url.split("/file/d/")[1].split("/")[0]
-                return file_id
+                return url.split("/file/d/")[1].split("/")[0]
             except Exception:
                 return None
         elif "open?id=" in url:
             try:
-                file_id = url.split("open?id=")[1].split("&")[0]
-                return file_id
+                return url.split("open?id=")[1].split("&")[0]
             except Exception:
                 return None
     return None
@@ -28,29 +34,102 @@ df = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vT13dyy2yobEUq
 df.rename(columns={
     'アーティスト名\n(例：ガッチャマン)': 'アーティスト名',
     '作品名（テーマ）\n例：\n・将来の自分へ\n・これから読みたい本への気持ちを栞に\n・今隣の人が考えてそうなこと': '作品名（テーマ）',
+    '作品に込めた想い・イチ押しポイント\n例：\n・将来たくさんのことに挑戦したいという思いから様々な色を使って違和感を表現しました！\n・今のなんかモヤモヤする気持ちを表現してみました': '作品の想い',
     '何か伝えたいことがあればこちらに！': '伝えたいこと',
     '制作年月日': '制作年月日',
     '作品の写真': '作品の写真'
 }, inplace=True)
 
-# タイトル
-st.title("みんなのアートギャラリー")
+# ===============================
+# トップページ（まだ本編を表示していないとき）
+# ===============================
+if not st.session_state.show_main:
+    st.markdown("<style>body {background-color: black;}</style>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: white;'>Welcome to Our Museum</h1>", unsafe_allow_html=True)
+
+    image_folder = "fortoppages"
+    image_files = [f for f in os.listdir(image_folder) if f.lower().endswith(".jpg") or f.lower().endswith(".jpeg")]
+
+    if image_files:
+        selected_image = random.choice(image_files)
+        st.image(os.path.join(image_folder, selected_image), use_container_width=True)
+
+    # ボタンのカスタムCSS（大きく中央寄せ）
+    st.markdown(
+        """
+        <style>
+        div.stButton > button:first-child {
+            font-size: 28px;
+            padding: 20px 60px;
+            background-color: white;
+            color: black;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 3カラムの真ん中にボタンを配置
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("Enter Gallery"):
+            st.session_state.show_main = True
+            st.rerun()
+
+    st.stop()  # ここで終了し、本編は表示しない
+
+# ===============================
+# 本編ページ（ギャラリー表示）
+# ===============================
+
+# ヘッダー画像
+st.image("header-artgallery.jpeg", use_container_width=True)
+
+# タイトル 
+st.title("Machi Colla Art Gallery")
+
+# ページ上部に戻るスクリプト
+st.markdown(
+    """
+    <script>
+    window.onload = function() {
+        window.scrollTo(0, 0);
+    }
+    </script>
+    """,
+    unsafe_allow_html=True
+)
+
+# サイドバーに作者ジャンプリンク
+st.sidebar.title("作者でジャンプ")
+unique_artists = df['アーティスト名'].dropna().unique()
+for artist in unique_artists:
+    anchor = artist.replace(" ", "_").replace("\n", "").strip()
+    st.sidebar.markdown(f"[{artist}](#{anchor})")
 
 # 各作品を表示
 for _, row in df.iterrows():
+    anchor = row['アーティスト名'].replace(" ", "_").replace("\n", "").strip()
+    st.markdown(f"<a name='{anchor}'></a>", unsafe_allow_html=True)
+
     st.subheader(row['作品名（テーマ）'])
     st.text(f"アーティスト名: {row['アーティスト名']}")
 
     file_id = convert_drive_url(row['作品の写真'].strip())
-
-    if file_id is None:
-        st.error("❌ 画像リンクの変換に失敗しました。URL形式を確認してください。")
-    else:
-
-        # iframeで画像埋め込み表示
+    if file_id:
         iframe_html = f"""
         <iframe src="https://drive.google.com/file/d/{file_id}/preview" width="100%" height="480" allow="autoplay"></iframe>
         """
         st.markdown(iframe_html, unsafe_allow_html=True)
+    else:
+        st.error("❌ 画像リンクの変換に失敗しました。URL形式を確認してください。")
+
+    if '作品の想い' in row and pd.notna(row['作品の想い']):
+        st.markdown(f"**作品に込めた想い・イチ押しポイント：** {row['作品の想い']}")
 
     st.markdown("---")
