@@ -3,15 +3,7 @@ import pandas as pd
 import os
 import random
 
-st.set_page_config(layout="wide")  # レイアウト設定
-st.markdown("""
-    <style>
-    /* 折りたたみアイコン（サイドバートグル）は常に表示 */
-    [data-testid="collapsedControl"] {
-        display: block;
-    }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(layout="wide", initial_sidebar_state="collapsed")  # サイドバーを初期で折りたたみ
 
 # セッション状態の初期化
 if "show_main" not in st.session_state:
@@ -35,10 +27,9 @@ def convert_drive_url(url):
                 return None
     return None
 
-# GoogleフォームのCSV読み込み
+# データの読み込みと整形
 df = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vT13dyy2yobEUq8gsBZp0BWzWY2YttwGmYmmm3DorjqwBRvgCtQCkJMJIWYCGFLV95gbEMFexAyPjJZ/pub?output=csv")
 
-# 列名を短く変換
 df.rename(columns={
     'アーティスト名\n(例：ガッチャマン)': 'アーティスト名',
     '作品名（テーマ）\n例：\n・将来の自分へ\n・これから読みたい本への気持ちを栞に\n・今隣の人が考えてそうなこと': '作品名（テーマ）',
@@ -48,9 +39,7 @@ df.rename(columns={
     '制作年月日': '制作年月日'
 }, inplace=True)
 
-# ===============================
-# トップページ（まだ本編を表示していないとき）
-# ===============================
+# トップページ
 if not st.session_state.show_main:
     st.markdown("<style>body {background-color: black;}</style>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: white;'>Welcome to Our Museum</h1>", unsafe_allow_html=True)
@@ -62,9 +51,7 @@ if not st.session_state.show_main:
         selected_image = random.choice(image_files)
         st.image(os.path.join(image_folder, selected_image), use_container_width=True)
 
-    # ボタンのカスタムCSS（大きく中央寄せ）
-    st.markdown(
-        """
+    st.markdown("""
         <style>
         div.stButton > button:first-child {
             font-size: 28px;
@@ -78,76 +65,60 @@ if not st.session_state.show_main:
             margin: 0 auto;
         }
         </style>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
-    # 3カラムの真ん中にボタンを配置
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("Enter Gallery"):
             st.session_state.show_main = True
             st.rerun()
 
-    st.stop()  # ここで終了し、本編は表示しない
+    st.stop()
 
-# ===============================
-# 本編ページ（ギャラリー表示）
-# ===============================
-
-# ヘッダー画像
+# ギャラリーページ
+st.markdown('<a name="top"></a>', unsafe_allow_html=True)
 st.image("header-artgallery.jpeg", use_container_width=True)
-
-# タイトル 
 st.title("Machi Colla Art Gallery")
 
-# ページ上部に戻るスクリプト
-st.markdown(
-    """
+st.markdown("""
     <script>
     window.onload = function() {
         window.scrollTo(0, 0);
     }
     </script>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
-# トップへ戻るボタンを右下に固定表示
-st.markdown(
-    """
+# トップへ戻るボタン
+st.markdown("""
     <style>
-    #top-button {
+    .top-button {
         position: fixed;
         bottom: 40px;
         right: 40px;
         background-color: rgba(0,0,0,0.4);
         color: white;
-        border: none;
-        padding: 12px 18px;
+        padding: 10px 18px;
         border-radius: 25px;
+        text-decoration: none;
         font-size: 16px;
-        cursor: pointer;
         z-index: 1000;
         transition: background-color 0.3s ease;
     }
-    #top-button:hover {
+    .top-button:hover {
         background-color: rgba(0,0,0,0.7);
     }
     </style>
-    <button id="top-button" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">▲ Top</button>
-    """,
-    unsafe_allow_html=True
-)
+    <a href="#top" class="top-button">▲ Top</a>
+""", unsafe_allow_html=True)
 
-# サイドバーに作者ジャンプリンク
+# サイドバー（デフォルト閉じる）
 with st.sidebar.expander("🔍 作者でジャンプ", expanded=False):
     unique_artists = df['アーティスト名'].dropna().unique()
     for artist in unique_artists:
         anchor = artist.replace(" ", "_").replace("\n", "").strip()
         st.markdown(f"[{artist}](#{anchor})")
 
-# 各作品を表示
+# 各作品の表示
 for _, row in df.iterrows():
     anchor = row['アーティスト名'].replace(" ", "_").replace("\n", "").strip()
     st.markdown(f"<a name='{anchor}'></a>", unsafe_allow_html=True)
@@ -157,15 +128,13 @@ for _, row in df.iterrows():
 
     file_id = convert_drive_url(row['作品の写真'].strip())
     if file_id:
-        iframe_html = f"""
-        <iframe src="https://drive.google.com/file/d/{file_id}/preview" width="100%" height="480" allow="autoplay"></iframe>
-        """
-        st.markdown(iframe_html, unsafe_allow_html=True)
+        st.markdown(f"""
+            <iframe src="https://drive.google.com/file/d/{file_id}/preview" width="100%" height="480" allow="autoplay"></iframe>
+        """, unsafe_allow_html=True)
     else:
         st.error("❌ 画像リンクの変換に失敗しました。URL形式を確認してください。")
 
-    # 「作品に込めた想い：」で表示（空欄除外）
-    if '作品の想い' in row and pd.notna(row['作品の想い']) and row['作品の想い'].strip() != "":
+    if '作品の想い' in row and pd.notna(row['作品の想い']) and row['作品の想い'].strip():
         st.markdown(f"**作品に込めた想い：** {row['作品の想い']}")
 
     st.markdown("---")
