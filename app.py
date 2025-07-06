@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import random
 import base64
-from dotenv import load_dotenv
 from supabase import create_client
 
 # ページ設定
@@ -76,11 +75,13 @@ def show_top():
     </style>
 """, unsafe_allow_html=True)
 
-# 通常通りst.buttonを呼び出す（位置はCSSが決める）
     if st.button("🎨 Enter Gallery", key="gallery-btn"):
         st.session_state.page = "gallery"
         st.rerun()
 
+# --------------------
+# 関数：ギャラリーページ
+# --------------------
 def show_gallery():
     import time
     import base64
@@ -89,11 +90,9 @@ def show_gallery():
         st.session_state.gallery_loaded = False
 
     if not st.session_state.gallery_loaded:
-        # ロゴ画像をbase64エンコード
         with open("rez_color_logo2.png", "rb") as f:
             logo_base64 = base64.b64encode(f.read()).decode()
 
-        # HTML + CSSで中央配置 & 背景白
         st.markdown(f"""
         <style>
         .stApp {{
@@ -115,13 +114,18 @@ def show_gallery():
 
         time.sleep(1.5)
         st.session_state.gallery_loaded = True
-        st.rerun()  # ✅ Streamlit v1.33以降
+        st.rerun()
         return
 
-    # 通常のギャラリー表示フェーズ
-    load_dotenv()
-    supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
-    storage_url = os.getenv("SUPABASE_STORAGE_URL")
+    # ✅ .env または st.secrets を使ってSupabase設定を読み込む
+    if os.path.exists(".env"):
+        
+        SUPABASE_URL = st.secrets["SUPABASE_URL"]
+        SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+        SUPABASE_STORAGE_URL = st.secrets["SUPABASE_STORAGE_URL"]
+
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    storage_url = SUPABASE_STORAGE_URL
 
     # ヘッダー画像＋ロゴ（上部）
     with open("header-artgallery.jpeg", "rb") as f:
@@ -175,7 +179,6 @@ def show_gallery():
                 if artwork.get("description"):
                     st.markdown("**作品に込めた想い**")
                     st.write(artwork["description"])
-
 
 # --------------------
 # 表示切り替え
