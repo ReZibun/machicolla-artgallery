@@ -48,7 +48,7 @@ def show_top():
             unsafe_allow_html=True
         )
 
-    # HTMLボタンスタイルだけ追加（実際のボタンはst.buttonで処理）
+    # HTMLボタンスタイル
     st.markdown("""
     <style>
     div[data-testid="stButton"] > button {
@@ -84,7 +84,6 @@ def show_top():
 # --------------------
 def show_gallery():
     import time
-    import base64
 
     if "gallery_loaded" not in st.session_state:
         st.session_state.gallery_loaded = False
@@ -117,12 +116,10 @@ def show_gallery():
         st.rerun()
         return
 
-    # ✅ .env または st.secrets を使ってSupabase設定を読み込む
-    if os.path.exists(".env"):
-        
-        SUPABASE_URL = st.secrets["SUPABASE_URL"]
-        SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-        SUPABASE_STORAGE_URL = st.secrets["SUPABASE_STORAGE_URL"]
+    # ✅ st.secrets から Supabase 読み込み
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    SUPABASE_STORAGE_URL = st.secrets["SUPABASE_STORAGE_URL"]
 
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
     storage_url = SUPABASE_STORAGE_URL
